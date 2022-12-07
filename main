@@ -1,0 +1,153 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+-- entity
+entity fsm is
+port ( aleatorio : in std_logic_vector(3 downto 0);
+aposta : in std_logic_vector (9 downto 0);
+clk,clr, comecar, comprar, nComprar : in std_logic;
+if(
+saldoFinal: out std_logic_vector (10 downto 0);
+jTotal, dTotal: out std_logic_vector(4 downto 0);
+jUltimo, dUltimo: out std_logic_vector (3 downto 0);
+ganhou, perdeu : out std_logic);
+end fsm;
+
+-- architecture
+architecture arch of fsm is
+type state_type is (ST1,ST2, ST3, ST4. ST5, ST6, ST7, ST8, ST9, ST10, ST11, ST12, ST13, ST14);
+signal PS,NS : state_type;
+signal TOTAL_JOGADOR, TOTAL_DEALER: std_logic_vector (4 downto 0);
+signal ULTIMO_JOGADOR, ULTIMO_DEALER: std_logic_vector (3 downto 0); 
+
+begin
+sync_proc: process(clk, NS, clr)
+begin
+-- take care of the asynchronous input
+if (CLR = '1') then
+PS <= ST1;
+elsif (rising_edge(CLK)) then
+PS <= NS;
+end if;
+
+end process sync_proc;
+
+comb_proc: process(PS,TOG_EN)
+
+begin
+
+jTotal <= '00000'; 
+dTotal <= '00000';
+jUltimo <= '0000';
+dultimo <= '0000'; -- pre-assign output
+
+case PS is
+--------------------------------------------------------------------
+when ST1 => 
+jTotal <= '00000'; -- Moore output
+dTotal <= '00000';
+jUltimo <= '0000';
+dultimo <= '0000';
+
+if (comecar = '1') then NS <= ST2;
+else NS <= ST1;
+end if;
+--------------------------------------------------------------------
+when ST2 => 
+
+TOTAL_JOGADOR <= aleatorio; -- Moore output
+ULTIMO_JOGADOR <= aleatorio; --transformar aleatorio em 5 bits
+jTotal <= TOTAL_JOGADOR;
+jUltimo <= ULTIMO_JOGADOR;
+
+NS <= ST3;
+-----------------------------------------------------------------
+when ST3 => 
+
+TOTAL_JOGADOR <= TOTAL_JOGADOR + aleatorio; -- Moore output
+ULTIMO_JOGADOR <= aleatorio; --transformar aleatorio em 5 bits
+jTotal <= TOTAL_JOGADOR;
+jUltimo <= ULTIMO_JOGADOR;
+
+NS <= ST4;
+------------------------------------------------------------
+when ST4 => 
+
+TOTAL_DEALER <= aleatorio; -- Moore output
+ULTIMO_DEALER <= aleatorio; --transformar aleatorio em 5 bits
+dTotal <= TOTAL_JOGADOR;
+dUltimo <= ULTIMO_JOGADOR;
+
+NS <= ST5;
+-------------------------------------------------------------------------
+when ST5 => 
+
+if(comprar = '1' and nComprar = '0')
+NS <= ST10;
+
+elsif(comprar = '0' and nComprar = '1')
+NS <= ST6;
+
+else
+NS <= ST5;
+end if;
+----------------------------------------------------------
+when ST6 =>
+
+ULTIMO_DEALER <= aleatorio;
+TOTAL_DEALER <= TOTAL_DEALER + aleatorio;
+
+if(TOTAL_DEALER < 17)
+NS <= ST6;
+
+elsif(TOTAL_DEALER > 21)
+NS <= ST9;
+
+elsif(TOTAL_JOGADOR > TOTAL_DEALER)
+NS <= ST9;
+
+else
+NS <= ST14;
+end if;
+----------------------------------------------------------------------------------
+when ST9 =>
+ganhou <= '1';
+perdeu <= '0'; 
+saldoFinal <= aposta * 1.5;
+NS <= ST9;
+-------------------------------------------------------------------------
+when ST10 =>
+ULTIMO_JOGADOR <= aleatorio;
+JOGADOR_TOTAL <= JOGADOR__TOTAL + aleatorio;
+if(JOGADOR_TOTAL > 21)
+NS <= ST14;
+else 
+NS <= ST 11;
+end if;
+--------------------------------------------------------------------
+when ST11 =>
+if(comprar = '1')
+NS <= ST11;
+else 
+NS ST12;
+-------------------------------------------------------------------------
+when ST12 =>
+if(nComprar = '1' && comprar = '0')
+NS <= ST6;
+elsif(nComprar = '0' && comprar = '1')
+NS <= ST10;
+else 
+NS <= ST12;
+end if;
+-------------------------------------------------------------------------
+when ST14 =>
+ganhou <= '0';
+perdeu <= '1';
+saldoFinal <= aposta * -1;
+when others => -- the catch-all condition
+ -- arbitrary; it should never
+NS <= ST0; -- make it to these two statements
+end case;
+
+end process comb_proc;
+
+end arch;
